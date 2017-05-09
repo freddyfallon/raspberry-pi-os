@@ -2,6 +2,12 @@
 .globl _start
 _start:
 
+b main
+
+.section .text
+main:
+mov sp,#0x8000
+
 ldr r0,=0x20200000
 
 mov r1,#1
