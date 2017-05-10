@@ -1,7 +1,9 @@
 .globl GetGpioAddress
 GetGpioAddress:
-ldr r0,=0x20200000
-mov pc,lr
+  gpioAddr .req r0
+  ldr gpioAddr,=0x20200000
+  mov pc,lr
+  .unreq gpioAddr
 
 .globl SetGpioFunction
 SetGpioFunction:
