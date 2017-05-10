@@ -5,55 +5,82 @@ mov pc,lr
 
 .globl SetGpioFunction
 SetGpioFunction:
-cmp r0,#53
-cmpls r1,#7
-movhi pc,lr
+    pinNum .req r0
+    pinFunc .req r1
+	cmp pinNum,#53
+	cmpls pinFunc,#7
+	movhi pc,lr
 
-push {lr}
-mov r2,r0
-bl GetGpioAddress
+  push {lr}
+	mov r2,pinNum
+	.unreq pinNum
+	pinNum .req r2
+	bl GetGpioAddress
+	gpioAddr .req r0
 
 functionLoop$:
-cmp r2,#9
-subhi r2,#10
-addhi r0,#4
+cmp pinNum,#9
+subhi pinNum,#10
+addhi gpioAddr,#4
 bhi functionLoop$
 
-add r2, r2,lsl #1
-lsl r1,r2
-str r1,[r0]
-pop {pc}
+add pinNum, pinNum,lsl #1
+lsl pinFunc,pinNum
+
+mask .req r3
+mov mask,#7
+lsl mask,pinNum
+.unreq pinNum
+
+mvn mask,mask
+	oldFunc .req r2
+	ldr oldFunc,[gpioAddr]
+	and oldFunc,mask
+	.unreq mask
+
+  orr pinFunc,oldFunc
+	.unreq oldFunc
+
+  str pinFunc,[gpioAddr]
+	.unreq pinFunc
+	.unreq gpioAddr
+	pop {pc}
 
 .globl SetGpio
 SetGpio:
 pinNum .req r0
 pinVal .req r1
 
-cmp pinNum,#53
-movhi pc,lr
-push {lr}
-mov r2,pinNum
-.unreq pinNum
-pinNum .req r2
-bl GetGpioAddress
-gpioAddr .req r0
+.globl SetGpio
+SetGpio:
+    pinNum .req r0
+    pinVal .req r1
 
-pinBank .req r3
-lsr pinBank,pinNum,#5
-lsl pinBank,#2
-add gpioAddr,pinBank
-.unreq pinBank
+	cmp pinNum,#53
+	movhi pc,lr
+	push {lr}
+	mov r2,pinNum
+    .unreq pinNum
+    pinNum .req r2
+	bl GetGpioAddress
+    gpioAddr .req r0
 
-and pinNum,#31
-setBit .req r3
-mov setBit,#1
-lsl setBit,pinNum
-.unreq pinNum
+	pinBank .req r3
+	lsr pinBank,pinNum,#5
+	lsl pinBank,#2
+	add gpioAddr,pinBank
+	.unreq pinBank
 
-teq pinVal,#0
-.unreq pinVal
-streq setBit,[gpioAddr,#40]
-strne setBit,[gpioAddr,#28]
-.unreq setBit
-.unreq gpioAddr
-pop {pc}
+	and pinNum,#31
+	setBit .req r3
+	mov setBit,#1
+	lsl setBit,pinNum
+	.unreq pinNum
+
+	teq pinVal,#0
+	.unreq pinVal
+	streq setBit,[gpioAddr,#40]
+	strne setBit,[gpioAddr,#28]
+	.unreq setBit
+	.unreq gpioAddr
+  	pop {pc}
