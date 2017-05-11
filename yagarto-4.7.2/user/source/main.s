@@ -8,8 +8,11 @@ b main
 main:
 mov sp,#0x8000
 
-.globl GetMailBoxBase
-GetMailBoxBase:
+.globl GetMailboxBase
+GetMailboxBase:
 ldr r0,=0x2000B880
 mov pc,lr
 
+.globl MailboxWrite
+MailboxWrite:
+tst
