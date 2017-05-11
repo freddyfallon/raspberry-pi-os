@@ -29,7 +29,7 @@ MailboxWrite:
   tst r0,#0b1111
   movne pc,lr
   cmp r1,#15
-  movhi pc,lr
+  movhi pc,lr /* Take a look into the function of pc here */
 
   channel .req r1
   value .req r2
