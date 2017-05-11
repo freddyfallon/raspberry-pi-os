@@ -2,74 +2,87 @@
 .globl _start
 _start:
 
+/*
+* Branch to the actual main code.
+*/
 b main
 
+/*
+* This command tells the assembler to put this code with the rest.
+*/
 .section .text
+
+/*
+* main is what we shall call our main operating system method. It never
+* returns, and takes no parameters.
+* C++ Signature: void main(void)
+*/
 main:
-mov sp,#0x8000
 
-.globl GetMailboxBase
-GetMailboxBase:
-ldr r0,=0x2000B880
-mov pc,lr
+/*
+* Set the stack point to 0x8000.
+*/
+  mov sp,#0x8000
 
-.globl MailboxWrite
-MailboxWrite:
-tst r0,#0b1111
-movne pc,lr
-cmp r1,#15
-movhi pc,lr
+/* NEW
+* Setup the screen.
+*/
+  mov r0,#1024
+  mov r1,#768
+  mov r2,#16
+  bl InitialiseFrameBuffer
 
-channel .req r1
-value .req r2
-mov value,r0
-push {lr}
-bl GetMailboxBase
-mailbox .req r0
+/* NEW
+* Check for a failed frame buffer.
+*/
+  teq r0,#0
+  bne noError$
 
-wait1$:
-status .req r3
-ldr status,[mailbox,#0x18]
+  mov r0,#16
+  mov r1,#1
+  bl SetGpioFunction
 
-tst status,#0x80000000
-.unreq status
-bne wait1$
+  mov r0,#16
+  mov r1,#0
+  bl SetGpio
 
-add value,channel
-.unreq channel
+  error$:
+    b error$
 
-str value,[mailbox,#0x20]
-.unreq value
-.unreq mailbox
-pop {pc}
+  noError$:
 
-.globl MailboxRead
-MailboxRead:
-cmp r0,#15
-movhi pc,lr
+  fbInfoAddr .req r4
+  mov fbInfoAddr,r0
 
-channel .req r1
-mov channel,r0
-push {lr}
-bl GetMailboxBase
-mailbox .req r0
+/* NEW
+* Set pixels forevermore.
+*/
+render$:
+  fbAddr .req r3
+  ldr fbAddr,[fbInfoAddr,#32]
 
-rightmail$:
-wait2$:
-status .req r2
-ldr status,[mailbox,#0x18]
+/* NEW
+* We will use r0 to keep track of the current colour.
+*/
+  colour .req r0
+  y .req r1
+  mov y,#768
+  drawRow$:
+    x .req r2
+    mov x,#1024
+    drawPixel$:
+      strh colour,[fbAddr]
+      add fbAddr,#2
+      sub x,#1
+      teq x,#0
+      bne drawPixel$
 
-mail .req r2
-ldr mail,[mailbox,#0]
+    sub y,#1
+    add colour,#1
+    teq y,#0
+    bne drawRow$
 
-inchan .req r3
-and inchan,mail,#0b1111
-teq inchan,channel
-.unreq inchan
-bne rightmail$
-.unreq mailbox
-.unreq channel
+  b render$
 
-and r0,mail,#0xfffffff0
-.unreq mail
-pop {pc}
+  .unreq fbAddr
+  .unreq fbInfoAddr
